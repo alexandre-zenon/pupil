@@ -1,4 +1,4 @@
-function h = plotImpulse(varargin)
+function h = plotImpulse( timp, imp, impsd, alpha , varargin)
 % inputs:
 %   Option 1: output from the pupilARX function (1 argument)
 %   Option 2: outputs from the impulse functino (3 arguments):
@@ -6,8 +6,8 @@ function h = plotImpulse(varargin)
 %       2nd: imp = impulse response from the impulse function
 %       3rd: impsd = impulse SD from the impulse function
 %   In both cases, one more optional argument indicates the desired alpha for
-%   computing the confidence intervals (2nd in option 1, 4th in option 2) 
-%   In both cases, the last argument (3rd in option 1, 5th in option 2) can also include the names of the variables.
+%   computing the confidence intervals (2nd in option 1, 5th in option 2) 
+%   In both cases, the last argument (3rd in option 1, 6th in option 2) can also include the names of the variables.
 labels={};
 if nargin<=3
     arxOutput=varargin{1};
@@ -16,27 +16,28 @@ if nargin<=3
     impsd=squeeze(arxOutput.impulseSD);
     if nargin==1
         alpha=0.05;
-    elseif nargin >=2
+    elseif nargin ==2
         alpha=varargin{2};
+    else
+        alpha=varargin{2};
+        
     end
-    if nargin==3
-        labels=varargin{3};
-    end
-elseif nargin<=5
+elseif nargin<=6
     timp=varargin{1}(:);
     imp=squeeze(varargin{2});
     impsd=squeeze(varargin{3});
-    if nargin==3
-        alpha=0.05;
-    elseif nargin >=4
-        alpha=varargin{4};
-    end
-    if nargin==5
-        labels=varargin{5};
-    end
 else
     error('Too many arguments');
 end
+
+if length(varargin)==1
+    labels=varargin{1};
+elseif length(varargin)>1
+    error('Incorrect number of arguments');
+else
+    labels={};
+end
+
 
 colors={'b','g','r','c','m','y'};
 

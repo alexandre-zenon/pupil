@@ -124,6 +124,4 @@ output.innovationError.LillieforsTest=p;
 
 % computes impulse response
 [imp,tbins,innovz,impsd] = impulse(output.model);
-output.impulse=imp;
-output.impulseTimeBins=tbins;
-output.impulseSD=impsd;
+output.

@@ -3,6 +3,7 @@ function [behavioralData, pupilData]=loadWithPupil(filename,matlabOnsetVariable)
 % The second argument should contain the name of the variable in the matlab
 % data which indicates the onset of the first display following
 % starttrial
+%example: [behavioralData, pupilData]=loadWithPupil('OCIntegralTimone_051112_7.mat','trialData.phaseOnset');
 disp('Parsing matlabOnsetVariable')
 if ~isempty(matlabOnsetVariable)
     f=findstr(matlabOnsetVariable,'.');
@@ -50,7 +51,7 @@ if eyelink
     if exist('trialData')
         ELstart=trialData(1).startTime;
         if ~isempty(field1)
-            try
+           try
                 if ~isempty(field2)
                     MATLABstart=behavioralData.(field1)(1).(field2)(1);
                 else
