@@ -4,8 +4,10 @@ function output = pupilARX(pupilData,inputMatrix,sampleRate,varargin)
 % pupilData: vector of pupil signal Nx1
 % inputMatrix: matrix of I input signals NxI.
 % sampleRate in Hz
-% optional last argument: vector of orders (same convention as the arx
-% function). When absent, the orders are selected so as to maximize BIC.
+% optional last arguments: 
+%   - vector of orders (same convention as the arx function). When absent,
+%   the orders are selected so as to maximize the chosen criterion.
+%   - string indicating the criterion for order selection (default='aic')
 %
 % This function assumes a maximal model order equal to sample Rate.
 % If there are more than 2 input signals, the model orders are selected
@@ -13,11 +15,10 @@ function output = pupilARX(pupilData,inputMatrix,sampleRate,varargin)
 % input. This prevents combinatorial explosion of the computational cost.
 %
 % output is a structure containing the fitted model (iddata object), the model predictions
-% (horizon 1), the model parameters with their standard deviations, and the
+% (horizon 1), the model parameters with their standard deviations, the impulse responses and the
 % innovation error (residuals) together with some sanity check on these residuals.
 %
-% A. Zénon, June 21, 2016
-
+% A. Zénon, Decembre 9, 2016
 
 % checks inputs
 sPD=size(pupilData);
@@ -47,18 +48,24 @@ if ~h
     warning('Pupil signal is not stationary !!');
 end
 
-if isempty(varargin)
-    selectOrder=true;
-elseif length(varargin)==1
-    selectOrder=false;
-    nn=varargin{1};
-else
+METHOD='aic';
+selectOrder=true;
+if nargin==1 | nargin==2
+    for ii = 1:nargin
+        if isstr(varargin{ii})
+            METHOD=varargin{ii};
+        elseif isvector(varargin{ii})
+            selectOrder=false;
+            nn=varargin{1};
+        end
+    end 
+elseif nargin>2
     error('Wrong number of arguments');
 end
 
 %general model parameters
 opt = arxOptions('Focus','Stability');
-orderSelectionCrit='bic';
+orderSelectionCrit=METHOD;
 
 %ARX Model
 minOrder=2;
