@@ -1,9 +1,15 @@
 function [behavioralData, pupilData]=loadWithPupil(filename,matlabOnsetVariable)
-% opens filename and outputs matlab data and eyelink data
+% Opens filename and outputs matlab data and eyetracking data from an
+% experiment using the COSYgraphics toolbox.
 % The second argument should contain the name of the variable in the matlab
 % data which indicates the onset of the first display following
-% starttrial
-%example: [behavioralData, pupilData]=loadWithPupil('OCIntegralTimone_051112_7.mat','trialData.phaseOnset');
+% starttrial. If empty, no alignement between the matlab and eyetracking
+% dataset will be performed. 
+% 
+% example: [behavioralData, pupilData]=loadWithPupil('OCIntegralTimone_051112_7.mat','trialData.phaseOnset');
+%
+% A. Zénon, Decembre 9, 2016
+
 disp('Parsing matlabOnsetVariable')
 if ~isempty(matlabOnsetVariable)
     f=findstr(matlabOnsetVariable,'.');
@@ -36,11 +42,11 @@ if eyelink
     f3 = [f f(ff(2):end)];
     
     if exist([f '.edf'])
-        [trialData,blockData]=etic_read_eyelink([f '.mat']);
+        [trialData,blockData]=read_eyelink([f '.mat']);
     elseif exist([f2 '.edf'])
-        [trialData,blockData]=etic_read_eyelink([f2 '.mat']);
+        [trialData,blockData]=read_eyelink([f2 '.mat']);
     elseif exist([f3 '.edf'])
-        [trialData,blockData]=etic_read_eyelink([f3 '.mat']);
+        [trialData,blockData]=read_eyelink([f3 '.mat']);
     else
         error('There is no pupil data');
     end
@@ -159,7 +165,7 @@ if eyelink
     end
 else % pupilLabs
     try
-        [trialData,blockData]=etic_read_pupilLabs(behavioralData);
+        [trialData,blockData]=read_pupilLabs(behavioralData);
         pupilData.trials = trialData;
         pupilData.block = blockData;
     catch

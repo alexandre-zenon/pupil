@@ -1,27 +1,15 @@
-function [eyelinkTrial, eyelinkBlock] = etic_read_eyelink(FILENAME)
+function [eyelinkTrial, eyelinkBlock] = read_eyelink(FILENAME)
 
-BLANK_ = 0;
-FIX_ = 1;
-DYNAMO_BLANK = 8;
-CUE_REWARD = 2;
-CUE_EFFORT = 3;
-DYNAMO_FB = 6;
-REWARD_ = 7;
-AUDITORY_STIM = 9;
-CUE_DELAY = 10;
-SYNC_TEST = 11;
-TOTAL_REW = 13;
-REWARD_TOTAL = 13;
-ME_FB = 14;
-SENTENCES = 15;
-STOP = 16;
+% This function takes as input the name of an eyelink file and outputs the
+% data trial by trial in eyelinkTrial, and as single continuous vectors in
+% eyelinkBlock. 
+% 
+% It is based on the COSYgraphics toolbox and assumes that the same toolbox was used to run the experiment.  
+%
+% A. Zénon, Decembre 9, 2016
+
 PRE_START_RECORD = 0;
-QUESTION_ = 17;
-REST_ = 18;
-QUESTION_ = 20;
-DYNAMO_MEFB = 14;
-
-BLINK_MARGIN = 100;
+BLINK_MARGIN = 100;% determines by how much blink time is appended before and after each Eyelink-detected blink. 
 
 if ~exist([FILENAME(1:end-4) '_events.asc']) || ~exist([FILENAME(1:end-4) '_samples.asc'])
     eyelinkTrial.startTime = NaN;
@@ -140,22 +128,6 @@ if exist('eyelinkTrial') && ~isfield(eyelinkTrial,'blinks')
 end
 
 allBlinkVector=logical(allBlinkVector);
-% if nanmean(allBlinkVector)<.75 & mean(allPupilVector==0)<.75
-%     allPupilVector(allBlinkVector) = NaN;
-%     allEyeXVector(allBlinkVector) = NaN;
-%     allEyeYVector(allBlinkVector) = NaN;
-%     %allPupilVector = processSCR(allPupilVector/2000,1,1, [.025 25],true);
-%     allPupilVector = processSCR(allPupilVector/2000,1,1, [],true);
-%     
-% elseif mean(allPupilVector==0)<.75
-%     allPupilVector(allPupilVector==0) = NaN;
-%     %allPupilVector = processSCR(allPupilVector/2000,1,1, [.025 25],true);
-%     allPupilVector = processSCR(allPupilVector/2000,1,1, [],true);
-% else
-%     allPupilVector= allPupilVector*NaN;
-%     allEyeXVector = allEyeXVector*NaN;
-%     allEyeYVector = allEyeYVector*NaN;
-% end
 allPupilVector=allPupilVector/2000;
 eyelinkBlock.pupilSize=allPupilVector;
 eyelinkBlock.blinks=allBlinkVector;

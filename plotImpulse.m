@@ -8,6 +8,10 @@ function h = plotImpulse(varargin)
 %   In both cases, one more optional argument indicates the desired alpha for
 %   computing the confidence intervals (2nd in option 1, 4th in option 2) 
 %   In both cases, the last argument (3rd in option 1, 5th in option 2) can also include the names of the variables.
+%
+% A. Zénon, Decembre 9, 2016
+
+
 labels={};
 if nargin<=3
     arxOutput=varargin{1};
