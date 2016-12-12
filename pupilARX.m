@@ -143,7 +143,8 @@ output.innovationError.trend.pValue=p;
 output.innovationError.LillieforsTest=p;
 
 % computes impulse response
-[imp,tbins,innovz,impsd] = impulse(output.model);
+tbins=[0:0.1:sampleRate];
+[imp,tbins,innovz,impsd] = impulse(output.model,tbins);
 output.impulse=imp;
 output.impulseTimeBins=tbins;
 output.impulseSD=impsd;

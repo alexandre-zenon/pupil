@@ -145,7 +145,8 @@ if eyelink
         pupilData.block.blinks = bl;
         pupilData.block.blinkRate=60*500*(nansum(diff(bl)==1)/sum(~isnan(bl)));%blinks per minute
         
-        pupilData.block.time=blockData.time(1)-ELoffset+[timeIndices(1):timeIndices(end)]-1;
+       %pupilData.block.time=blockData.time(1)-ELoffset+[timeIndices(1):timeIndices(end)]+9;
+        pupilData.block.time=blockData.time-ELoffset;
     else
         pupilData.block.pupilSize = NaN;
         pupilData.block.missingData = NaN;
@@ -159,6 +160,12 @@ if eyelink
             pupilData.trials(tr).startTime = pupilData.trials(tr).startTime-ELoffset;
             pupilData.trials(tr).stopTime = pupilData.trials(tr).stopTime-ELoffset;
             pupilData.trials(tr).eyeTime = pupilData.trials(tr).eyeTime-ELoffset;
+            
+            ti=pupilData.block.time;
+            dtiStart=abs(ti-pupilData.trials(tr).startTime);
+            beg=find(dtiStart==min(dtiStart));
+            blockIx=[beg:beg+length(pupilData.trials(tr).eyeTime)-1];
+            pupilData.trials(tr).pupilSize = pupilData.block.pupilSize(blockIx);
         end
     else
         pupilData.trials = NaN;
