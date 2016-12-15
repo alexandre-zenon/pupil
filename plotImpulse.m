@@ -1,19 +1,20 @@
 function h = plotImpulse(varargin)
 % inputs:
 %   Option 1: output from the pupilARX function (1 argument)
-%   Option 2: outputs from the impulse functino (3 arguments):
+%   Option 2: outputs from the impulse function (3 arguments):
 %       1st: timp = time bin vector
 %       2nd: imp = impulse response from the impulse function
-%       3rd: impsd = impulse SD from the impulse function
+%       3rd: impsd = impulse SD from the impulse function (leave empty if
+%       no error bar is desired)
 %   In both cases, one more optional argument indicates the desired alpha for
-%   computing the confidence intervals (2nd in option 1, 4th in option 2) 
-%   In both cases, the last argument (3rd in option 1, 5th in option 2) can also include the names of the variables.
+%   computing the confidence intervals (2nd arg in option 1, 4th arg in option 2) 
+%   In both cases, the last argument (3rd arg in option 1, 5th arg in option 2) can also include the names of the variables.
 %
-% A. Zénon, Decembre 9, 2016
+% A. Zénon, Decembre 15, 2016
 
 
 labels={};
-if nargin<=3
+if isstruct(varargin{1}) && nargin<=3
     arxOutput=varargin{1};
     timp=arxOutput.impulseTimeBins(:);
     imp=squeeze(arxOutput.impulse);
