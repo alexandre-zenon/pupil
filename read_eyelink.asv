@@ -5,9 +5,7 @@ function [eyelinkTrial, eyelinkBlock] = read_eyelink(FILENAME, varargin)
 % eyelinkBlock. 
 % 
 % If coded eyelink events are available, they should be provided as a
-% structure in second argument. The structure should have a "key" field,
-% containing the event names, and a "value" field, containing the corresponding event
-% codes.
+% structure in second argument. 
 % 
 % It is based on the COSYgraphics toolbox and assumes that the same toolbox was used to run the experiment.  
 %
@@ -15,16 +13,7 @@ function [eyelinkTrial, eyelinkBlock] = read_eyelink(FILENAME, varargin)
 
 if length(varargin)==0
 elseif length(varargin)==1
-    eventList=varargin{1};
-    if isstruct(eventList)
-        if isfield(eventList,'key') && isfield(eventList,'value')
-            for ii = 1:length(eventList)
-                eval([eventList(ii).key '=' num2str(eventList(ii).value) ';']);
-            end
-        end
-    else 
-        error('Second argument should be a structure containing the events key-value pairs');
-    end
+    
 else
     error('Incorrect number of arguments');
 end

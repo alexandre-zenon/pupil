@@ -19,7 +19,6 @@ function [behavioralData, pupilData]=loadWithPupil(filename,varargin)
 %
 % A. Zénon, Decembre 9, 2016
 
-eventList=struct;
 for ii = 1:length(varargin)
     if ischar(varargin{ii})
         matlabOnsetVariable=varargin{ii};
@@ -62,11 +61,11 @@ if eyelink
     f3 = [f f(ff(2):end)];
     
     if exist([f '.edf'])
-        [trialData,blockData]=read_eyelink([f '.mat'],eventList);
+        [trialData,blockData]=read_eyelink([f '.mat']);
     elseif exist([f2 '.edf'])
-        [trialData,blockData]=read_eyelink([f2 '.mat'],eventList);
+        [trialData,blockData]=read_eyelink([f2 '.mat']);
     elseif exist([f3 '.edf'])
-        [trialData,blockData]=read_eyelink([f3 '.mat'],eventList);
+        [trialData,blockData]=read_eyelink([f3 '.mat']);
     else
         error('There is no pupil data');
     end
