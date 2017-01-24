@@ -19,7 +19,7 @@ function [behavioralData, pupilData]=loadWithPupil(filename,varargin)
 %
 % A. Z�non, Decembre 9, 2016
 
-matlabOnsetVariable=[];
+
 eventList=struct;
 for ii = 1:length(varargin)
     if ischar(varargin{ii})
@@ -178,7 +178,6 @@ if eyelink
     if exist('trialData') && isstruct(trialData)
         pupilData.trials = trialData;
         for tr = 1:length(pupilData.trials)
-            
             pupilData.trials(tr).startTime = pupilData.trials(tr).startTime-ELoffset;
             pupilData.trials(tr).stopTime = pupilData.trials(tr).stopTime-ELoffset;
             pupilData.trials(tr).eyeTime = pupilData.trials(tr).eyeTime-ELoffset;
