@@ -5,7 +5,7 @@ function smoothedData=fastSmooth(data,smoothWin)
 %
 % A. Zénon, Decembre 9, 2016
 
-if (smoothWin/2)=round(smoothWin/2)
+if (smoothWin/2)==round(smoothWin/2)
     error('Accepts only odd values as window size');
 end
 data=data(:);
