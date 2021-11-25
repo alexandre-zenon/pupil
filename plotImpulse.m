@@ -50,21 +50,21 @@ hold(ax,'on');
 legendstr='';
 for pp = 1:size(imp,2)
     if ~isempty(impsd)
-        h{pp}=shadedErrorBar(timp,imp(:,pp),tinv(1-alpha/2,10000)*impsd(:,pp),colors{pp});
+        h(pp)=shadedErrorBar(timp,imp(:,pp),tinv(1-alpha/2,10000)*impsd(:,pp),colors{pp});
         shadedPlot=true;
     else
-        h{pp}=plot(timp,imp(:,pp),colors{pp});
+        h(pp)=plot(timp,imp(:,pp),colors{pp});
         shadedPlot=false;
     end
     %set(gca,'XScale','log')
 end
 xlabel('Time (s)')
 ylabel('Pupil response (AU)')
-a=cell2mat(h);
+%a=cell2mat(h);
 if shadedPlot
-    legend([a.mainLine],labels)
+    legend([h.mainLine],labels)
 else
-    legend(a,labels)
+    legend(h,labels)
 end
 hold(ax,'off');
 end

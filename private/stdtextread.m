@@ -177,6 +177,21 @@ end
 %dt158=toc, tic
 
 %% EXTRACT COLUMN DATA WITH STRREAD
+% f=find(double(content)==10,1);
+% firstLine = content(1:f);
+% firstLine(double(firstLine)==32)='';
+% f=find(double(firstLine)==9);
+% b=[1 f+1];
+% e=[f-1 length(firstLine)];
+% format='';
+% for ff = 1:length(b)
+%     if ~isempty(str2num(firstLine(b(ff):e(ff))))
+%         format=[format '%d'];
+%     else
+%         format=[format '%s'];
+%     end
+% end
+    
 [columns{1:J}] = strread(content,format,'headerlines',headerlines,'delimiter',char(9)); % <15-jun-2011: Fix space bug: add 'delimiter' param>
 %dt161=toc, tic
 

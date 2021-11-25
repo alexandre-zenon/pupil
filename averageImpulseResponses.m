@@ -16,22 +16,34 @@ function [overallMean,overallVariance,overallSE,CI]=averageImpulseResponses(pupi
 
 if isstruct(pupilResponses)
     for ii = 1:length(pupilResponses)
-        nf(ii)=size(pupilResponses(ii).impulse,3);
-        ns(ii,:)=pupilResponses(ii).impulseTimeBins;
+        if ~isempty(pupilResponses(ii).impulseTimeBins)
+            ok(ii)=true;
+            nf(ii)=size(pupilResponses(ii).impulse,3);
+            ns(ii,:)=pupilResponses(ii).impulseTimeBins;
+        else
+            ok(ii)=false;
+        end
     end
-    if length(unique(nf))>1
+    NF=unique(nf(ok));
+    pupilResponses=pupilResponses(ok);
+    ns=ns(ok,:);
+    if length(NF)>1
         error('Inconsistant number of factors in inputs');
     end
     cA=corr(ns');
     if mean(cA(:))~=1
         error('Inconsistant time bins in inputs');
     end
-    for ff = 1:size(pupilResponses.impulse,3)
+    for ff = 1:NF
         means = zeros(length(pupilResponses),size(ns,2));
         variances = zeros(length(pupilResponses),size(ns,2));
         for ii = 1:length(pupilResponses)
-            means(ii,:)=pupilResponses.impulse;
-            variances(ii,:)=pupilResponses.impulseSD;
+            means(ii,:)=pupilResponses(ii).impulse(:,:,ff);
+            if ~isempty(pupilResponses(ii).impulseSD)
+                variances(ii,:)=pupilResponses(ii).impulseSD(:,:,ff);
+            else
+                variances(ii,:)=means(ii,:)*NaN;
+            end
         end
         pupilCell{1}=means;
         pupilCell{2}=variances;

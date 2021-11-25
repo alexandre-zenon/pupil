@@ -1,4 +1,4 @@
-function output = pupilARX(pupilData,inputMatrix,sampleRate,varargin)
+function output = pupilARX_old(pupilData,inputMatrix,sampleRate,varargin)
 % output = pupilARX(pupilData,inputMatrix,sampleRate)
 %
 % pupilData: vector of pupil signal Nx1
@@ -9,8 +9,6 @@ function output = pupilARX(pupilData,inputMatrix,sampleRate,varargin)
 %   - vector of orders (same convention as the arx function). When absent,
 %   the orders are selected so as to maximize the chosen criterion.
 %   - string indicating the criterion for order selection (default='aic')
-%   - cell array with the range of order to test in the automatic order
-%   selection
 %
 % This function assumes a maximal model order equal to sample Rate.
 % If there are more than 2 input signals, the model orders are selected
@@ -54,24 +52,12 @@ if ~h
 end
 
 METHOD='aic';
-propTrain = 0.5;% proportion of data included in training
 selectOrder=true;
-%default values of range of orders tested in automatic selection procedure
-orderRange = {};
-minOrder=1;
-maxOrder=sampleRate;
-maxLatency=sampleRate*2;
-minLatency=1;
 nVarargin=length(varargin);
 if nVarargin==1 | nVarargin==2
     for ii = 1:nVarargin
         if isstr(varargin{ii})
             METHOD=varargin{ii};
-        elseif iscell(varargin{ii})
-            orderRange = varargin{ii};
-            if length(orderRange)>5
-                error('Cannot include order range > 5');
-            end
         elseif isvector(varargin{ii})
             selectOrder=false;
             nn=varargin{1};
@@ -89,89 +75,48 @@ opt = arxOptions('Focus','Simulation','EnforceStability',true);
 orderSelectionCrit=METHOD;
 
 %ARX Model
+minOrder=1;
+maxOrder=sampleRate;
+maxLatency=sampleRate*2;
+minLatency=0;
+%maxLatency=0;
 if selectOrder
-    %fprintf('Selecting best model order\n');
+    fprintf('Selecting best model order\n');
     if AR
         data=iddata(pupilData,[],1/sampleRate);
-        if any(isnan(pupilData))
-            data=misdata(data,idpoly);
-        end
-        
-        s=size(data);
-        if ~isempty(orderRange)
-            V = arxstruc(data(1:floor(s(1)*propTrain)),data(floor(s(1)*propTrain)+1:end),struc(orderRange{1}));
-        else
-            disp('Using default order range values');
-            V = arxstruc(data(1:floor(s(1)*propTrain)),data(floor(s(1)*propTrain)+1:end),struc(minOrder:maxOrder));
-        end
+        V = arxstruc(data,data,struc(minOrder:maxOrder));
         nn = selstruc(nanmean(V,3),orderSelectionCrit);
     else
         if size(inputMatrix,2)==1
             data=iddata(pupilData,inputMatrix,1/sampleRate);
-            if any(isnan(pupilData))
-                data=misdata(data,idpoly);
-            end
-            s=size(data);
-            if ~isempty(orderRange) && length(orderRange)==3
-                V = arxstruc(data(1:floor(s(1)*propTrain)),data(floor(s(1)*propTrain)+1:end),struc(orderRange{1},orderRange{2},orderRange{3}));
-            else
-                disp('Using default order range values');
-                V = arxstruc(data(1:floor(s(1)*propTrain)),data(floor(s(1)*propTrain)+1:end),struc(minOrder:maxOrder,minOrder:maxOrder,minLatency:maxLatency));
-            end
+            V = arxstruc(data,data,struc(minOrder:maxOrder,minOrder:maxOrder,minLatency:maxLatency));
             nn = selstruc(nanmean(V,3),orderSelectionCrit);
         elseif size(inputMatrix,2)>=2
             data=iddata(pupilData,inputMatrix(:,1:2),1/sampleRate);
-            if any(isnan(pupilData))
-                data=misdata(data,idpoly);
-            end
-            s=size(data);
-            if ~isempty(orderRange) && length(orderRange)==5
-                V = arxstruc(data(1:floor(s(1)*propTrain)),data(floor(s(1)*propTrain)+1:end),struc(orderRange{1},orderRange{2},orderRange{3},orderRange{4},orderRange{5}));
-            else
-                disp('Using default order range values');
-                V = arxstruc(data(1:floor(s(1)*propTrain)),data(floor(s(1)*propTrain)+1:end),struc(minOrder:maxOrder,minOrder:maxOrder,minOrder:maxOrder,minLatency:maxLatency,minLatency:maxLatency));
-            end
+            V = arxstruc(data,data,struc(minOrder:maxOrder,minOrder:maxOrder,minOrder:maxOrder,minLatency:maxLatency,minLatency:maxLatency));
             nn = selstruc(nanmean(V,3),orderSelectionCrit);
         end
         if size(inputMatrix,2)>2
-            disp('Using default order range values for inputs beyond two');
             data=iddata(pupilData,inputMatrix(:,1:3),1/sampleRate);
-            if any(isnan(pupilData))
-                data=misdata(data,idpoly);
-            end
-            s=size(data);
-            V = arxstruc(data(1:floor(s(1)*propTrain)),data(floor(s(1)*propTrain)+1:end),struc(nn(1),nn(2),nn(3),minOrder:maxOrder,nn(4),nn(5),minLatency:maxLatency));
+            V = arxstruc(data,data,struc(nn(1),nn(2),nn(3),minOrder:maxOrder,nn(4),nn(5),minLatency:maxLatency));
             nn = selstruc(nanmean(V,3),orderSelectionCrit);
         end
         if size(inputMatrix,2)>3
-            disp('Using default order range values for inputs beyond two');
             data=iddata(pupilData,inputMatrix(:,1:4),1/sampleRate);
-            if any(isnan(pupilData))
-                data=misdata(data,idpoly);
-            end
-            s=size(data);
-            V = arxstruc(data(1:floor(s(1)*propTrain)),data(floor(s(1)*propTrain)+1:end),struc(nn(1),nn(2),nn(3),nn(4),minOrder:maxOrder,nn(5),nn(6),nn(7),minLatency:maxLatency));
+            V = arxstruc(data,data,struc(nn(1),nn(2),nn(3),nn(4),minOrder:maxOrder,nn(5),nn(6),nn(7),minLatency:maxLatency));
             nn = selstruc(nanmean(V,3),orderSelectionCrit);
         end
         if size(inputMatrix,2)>4
-            disp('Using default order range values for inputs beyond two');
             data=iddata(pupilData,inputMatrix(:,1:5),1/sampleRate);
-            if any(isnan(pupilData))
-                data=misdata(data,idpoly);
-            end
-            s=size(data);
-            V = arxstruc(data(1:floor(s(1)*propTrain)),data(floor(s(1)*propTrain)+1:end),struc(nn(1),nn(2),nn(3),nn(4),nn(5),minOrder:maxOrder,nn(6),nn(7),nn(8),nn(9),minLatency:maxLatency));
+            V = arxstruc(data,data,struc(nn(1),nn(2),nn(3),nn(4),nn(5),minOrder:maxOrder,nn(6),nn(7),nn(8),nn(9),minLatency:maxLatency));
             nn = selstruc(nanmean(V,3),orderSelectionCrit);
         end
     end
 else
     data=iddata(pupilData,inputMatrix,1/sampleRate);
-    if any(isnan(pupilData))
-        data=misdata(data,idpoly);
-    end
 end
 
-%fprintf('Fitting the model\n');
+fprintf('Fitting the model\n');
 output.ARXorders=nn;
 output.model=arx(data,nn,opt);
 y=predict(output.model,data,1);
