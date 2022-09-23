@@ -37,4 +37,4 @@ switch varType
     case 'normal'
         data=squeeze(nanmean(reshape(data(1:end-bl),SRratio,(length(data)-bl)/SRratio)));
 end
-disp(['The last ' num2str(bl) ' elements were lost in the process']);
+% disp(['The last ' num2str(bl) ' elements were lost in the process']);

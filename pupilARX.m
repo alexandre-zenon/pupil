@@ -190,11 +190,12 @@ output.innovationError.autocorr.LjungBox=p;
 output.innovationError.autocorr.acf=acfARX;
 output.innovationError.autocorr.acfLags=lagsARX;
 output.innovationError.autocorr.acfSignificanceThreshold=bounds;
-[paracfARX,parlagsARX,bounds] = parcorr(output.innovationError.data);
+[paracfARX,parlagsARX,bounds] = parcorr(output.innovationError.data(~isnan(output.innovationError.data)));
 output.innovationError.autocorr.paracf=paracfARX;
 output.innovationError.autocorr.paracfLags=parlagsARX;
 output.innovationError.autocorr.paracfSignificanceThreshold=bounds;
-[c,p]=corr(output.innovationError.data,[1:length(output.innovationError.data)]','type','Spearman');
+[c,p]=corr(output.innovationError.data(~isnan(output.innovationError.data)),...
+    [1:sum(~isnan(output.innovationError.data))]','type','Spearman');
 output.innovationError.trend.correlationCoeff=c;
 output.innovationError.trend.pValue=p;
 [h,p] = lillietest(output.innovationError.data);
