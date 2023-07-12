@@ -7,53 +7,38 @@ function data=loadData(varargin)
 %   signal synchronization
 %   - a cell array with pairs of string indicating variables values that
 %   should be true for the data to be extracted
-% Fourth argument activates the option to remove extra blink. 
+% Last argument activates the option to remove extra blink. 
 %
 % exemple: data=loadData('','response.trialOnset',{options.version,'calcul'})
-extraBlinkRemoval = false;
+extraBlinkRemoval = true;
+exploreTree=true;
+synchroEvent='';
+inclusionCriteria={};
 if nargin==0
     directoryname = uigetdir;
     cd(directoryname);
-    exploreTree=true;
-    synchroEvent='';
-    inclusionCriteria={};
 elseif nargin==1
     directoryname = varargin{1};
     if isempty(directoryname)
         directoryname = uigetdir;
     end
     cd(directoryname);
-    exploreTree=true;
-    inclusionCriteria={};
 elseif nargin>=2
     directoryname = varargin{1};
     if isempty(directoryname)
         directoryname = uigetdir;
     end
     cd(directoryname);
-    inclusionCriteria={};
-    if ischar(varargin{2})
-        synchroEvent=varargin{2};
-        exploreTree=true;
-    elseif iscell(varargin{2})
-        inclusionCriteria=varargin{2};
-    else
-        exploreTree=varargin{2};
-        synchroEvent='';
+    for ii = 2:nargin-1
+        if ischar(varargin{ii})
+            synchroEvent=varargin{ii};
+        elseif iscell(varargin{ii})
+            inclusionCriteria=varargin{ii};
+        else
+            exploreTree=varargin{ii};
+        end
     end
-end
-if nargin==3
-    inclusionCriteria={};
-    if ischar(varargin{3})
-        synchroEvent=varargin{3};
-    elseif iscell(varargin{3})
-        inclusionCriteria=varargin{3};
-    else
-        exploreTree=varargin{3};
-    end
-end
-if nargin==4
-    extraBlinkRemoval = varargin{4};
+    extraBlinkRemoval = varargin{end};
 end
 
 files=dir;
@@ -71,7 +56,7 @@ if dirTreeFlag
             cd(files(filesi).name);
             
             %data.directories(nextDir).files=loadData(pwd,true,synchroEvent);
-            d=loadData(pwd,true,synchroEvent,extraBlinkRemoval);
+            d=loadData(pwd,true,synchroEvent,inclusionCriteria,extraBlinkRemoval);
             for dd = 1:length(d)
                 nextDir=nextDir+1;
                 data(nextDir)=d(dd);
@@ -99,4 +84,8 @@ else
             end
         end
     end
+end
+if ~exist('data')
+    data = NaN;
+    warning('There is probably no file in this directory')
 end

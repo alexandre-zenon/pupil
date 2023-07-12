@@ -13,55 +13,68 @@ if nargin ==1
     error('Missing sampling rate argument');
 end
 
-switch samplingRate
-    case 10
-        smoothingParam = 8;
-    case 1000
-        smoothingParam = 16;
-    otherwise
-        smoothingParam = 8;
-end
-
 if isstruct(pupilData) && isfield(pupilData,'block')
     blockData = pupilData.block; % data coming from loadWithPupil
     noTrials = false;
-else
+elseif isstruct(pupilData)
     blockData = pupilData; % data coming directly from read_eyelink
     noTrials = true;
+else % just a vector of pupil data
+    blockData.pupilSize = pupilData;
+    blockData.eyeY = pupilData*0;
+    blockData.eyeX = pupilData*0;
+    blockData.time = [1:length(pupilData)];
+    blockData.saccades = pupilData*NaN;
+    blockData.blinks = pupilData<=0;
+    noTrials = true;
 end
-%binInterval = unique(round(diff(blockData.time)*1000)/1000);%rounding issues
-%sampleIndices=ceil((blockData.time-blockData.time(1)+1)/binInterval);
+
 sampleIndices=[1:length(blockData.time)];
 bl = double(blockData.blinks);
 sc = double(blockData.saccades);
 
 %% takes saccade indices that contain blinks as indices for blinks (SR Research suggestion)
-saccOnsets = find(diff(sc)>0)+1;saccOnsets = saccOnsets(:);
-if sc(1)
-    saccOnsets = [1; saccOnsets];
+if ~all(sc==0) && ~all(isnan(sc))
+    saccOnsets = find(diff(sc)>0)+1;saccOnsets = saccOnsets(:);
+    if sc(1)
+        saccOnsets = [1; saccOnsets];
+    end
+    saccOffsets = find(diff(sc)<0);saccOffsets=saccOffsets(:);
+    if sc(end)
+        saccOffsets = [saccOffsets; length(sc)];
+    end
+    blinkOnsets = find(diff(bl)>0)+1;
+    if bl(1)
+        blinkOnsets = [1; blinkOnsets(:)];
+    end
+    bl2 = bl*0;
+    for bb = 1:length(blinkOnsets)
+        f = (blinkOnsets(bb)>=saccOnsets) & (blinkOnsets(bb)<=saccOffsets);
+        bl2(saccOnsets(f):saccOffsets(f)) = 1;
+    end
+    bl = bl2;
+    clear bl2;
+else
+    blinkOnsets = find(diff(bl)>0)+1;
+    if bl(1)
+        blinkOnsets = [1; blinkOnsets(:)];
+    end
 end
-saccOffsets = find(diff(sc)<0);saccOffsets=saccOffsets(:);
-if sc(end)
-    saccOffsets = [saccOffsets; length(sc)];
-end
-blinkOnsets = find(diff(bl)>0)+1;
-if bl(1)
-    blinkOnsets = [1; blinkOnsets(:)];
-end
-bl2 = bl*0;
-for bb = 1:length(blinkOnsets)
-    f = (blinkOnsets(bb)>=saccOnsets) & (blinkOnsets(bb)<=saccOffsets);
-    bl2(saccOnsets(f):saccOffsets(f)) = 1;
-end
-bl = bl2;
-clear bl2;
 
 if ~all(bl==1)
     fd=find(diff(bl)==1);
     nfd=find(diff(bl)==-1);
+    
+    if bl(end)==1
+        nfd = [nfd; length(bl)];
+    end
     if ~isempty(fd)
         nfd=nfd(find(nfd>fd(1),1):end);
-        fd=fd(1:find(fd<nfd(end),1,'last'));
+        if ~isempty(nfd)
+            fd=fd(1:find(fd<nfd(end),1,'last'));
+        else
+            fd = [];
+        end
     end
     blinkDurations=(nfd-fd)*2;%in ms
     nonBlinks=find(blinkDurations>(samplingRate/2));%500 ms threshold
@@ -88,46 +101,16 @@ data2nan = union(union(longBlinks,find(pu==0)),find(bl==1));
 pu(data2nan) = NaN;
 eyeX(data2nan) = NaN;
 eyeY(data2nan) = NaN;
-% pu(longBlinks) = NaN;%missing data is put to NaN
-% pu(pu==0) = NaN;%missing data is put to NaN
-% pu(bl==1) = NaN;%blinks are put to NaN
-
 
 if extraBlinkRemoval
     % takes too large changes in pupil size and travels backward and forward
     % until speed of change reaches zero
-    %blinkEdges = setdiff(unique(sort([find(bl(:))-1, find(bl(:))+1])),find(bl));
-    xPu = interp1(find(~isnan(pu)),pu(~isnan(pu)),[1:length(pu)],'linear');%temporary interp for derivative
-    dPu = diff2pt(samplingRate,xPu(:),smoothingParam);
-    %remainingBlinks=intersect(find(dPu<-.1),blinkEdges);%blink onsets
-    remainingBlinks = find(diff(isnan(pu))==1);%blink onsets
-    remainingBlinks=union(remainingBlinks,find(dPu<-4));
-    blinkOffsets = find(diff(isnan(pu))==-1);
-    blinkOffsets=union(blinkOffsets,find(dPu>4));
-    newbl = bl;
-    for ii = 1:length(remainingBlinks)
-        ix = remainingBlinks(ii);
-        newbl(ix) = 1;
-        while (dPu(ix)<-0.5) && ix>1
-            ix = ix-1;
-            newbl(ix) = 1;
-        end
-        ix = remainingBlinks(ii);
-        while all(ix~=blinkOffsets) && ix<length(dPu)
-            ix = ix+1;
-            newbl(ix) = 1;
-        end
-    end
-    %remainingBlinks=intersect(find(dPu>.1),blinkEdges);
-    remainingBlinks = blinkOffsets;%blink offsets
-    for ii = 1:length(remainingBlinks)
-        ix = remainingBlinks(ii);
-        newbl(ix) = 1;
-        while (dPu(ix)>0.5) && ix<length(dPu)
-            ix = ix+1;
-            newbl(ix) = 1;
-        end
-    end
+%     newbl = removeRemainingBlinks(pu,bl,samplingRate,50);
+%     pu(newbl==1) = NaN;
+%     eyeX(newbl==1) = NaN;
+%     eyeY(newbl==1) = NaN;
+    
+    newbl = removeRemainingBlinks(pu,bl,samplingRate,12);
     pu(newbl==1) = NaN;
     eyeX(newbl==1) = NaN;
     eyeY(newbl==1) = NaN;
@@ -148,14 +131,20 @@ if 0% no extra removal implemented for now
 end
 
 %removes pieces of data that are too short to be real fixations between
-%blinks
+%blinks and interpolates
 if ~all(isnan(pu))
     fd=find(diff((~isnan(pu)))==1);
     nfd=find(diff((~isnan(pu)))==-1);
-    if ~isempty(nfd), nfd=nfd(find(nfd>fd(1),1):end);end
+    if isnan(pu(end))
+        fd = [fd; length(pu)];
+    end
+    %if ~isempty(nfd), nfd=nfd(find(nfd>fd(1),1):end);end
+    if ~isempty(nfd) && ~isempty(fd)
+        nfd=nfd(find(nfd>fd(1),1):end);
+    end
     if ~isempty(nfd) && ~isempty(fd)
         fd=fd(1:find(fd<nfd(end),1,'last'));
-        pupilTraceDurations=(nfd-fd)*2;%in ms
+        pupilTraceDurations=(nfd-fd)*(1000/samplingRate);%in ms
         nonPupil=find(pupilTraceDurations<500);
         excludePu=bl*false;
         for ii = 1:length(nonPupil)
@@ -169,6 +158,9 @@ if ~all(isnan(pu))
     end
     blinkOnsets = find(diff(isnan(pu))>0)+1;
     blinkOffsets = find(diff(isnan(pu))<0);
+    if isnan(pu(end))
+        blinkOffsets = [blinkOffsets; length(pu)];
+    end
     if ~isempty(blinkOnsets) && ~isempty(blinkOffsets)
         if (blinkOffsets(1)<blinkOnsets(1)) % data begins with blink
             blinkOffsets(1) = [];
@@ -189,7 +181,7 @@ if ~all(isnan(pu))
             warning('This method is very slow and not optimal yet.');
             warning('Not implemented for eye position data.');
             for bb = 1:length(fd)
-                x = [fd(bb)-1000:nfd(bb)+1000]';
+                x = [fd(bb)-samplingRate:nfd(bb)+samplingRate]';
                 x(x<1) = [];
                 x(x>length(pu)) = [];
                 y = pu(x)';
@@ -226,57 +218,66 @@ if ~all(isnan(pu))
     end
 end
 
+% structures data
 bl(longBlinks) = NaN;
 md = pu*0;
 md(longBlinks) = 1;
-
-pupilData.block.pupilSize = pu;
-pupilData.block.missingData = md;
-pupilData.block.blinks = bl;
-pupilData.block.blinkRate=60*500*(nansum(diff(bl)==1)/sum(~isnan(bl)));%blinks per minute
-pupilData.block.eyeX = eyeX;
-pupilData.block.eyeY = eyeY;
-
-if ~noTrials % only for data coming from read_eyelink
-    for tr = 1:length(pupilData.trials)
-        ti = pupilData.block.time;
-        start = find(ti==pupilData.trials(tr).startTime);
-
-        %         if ~isfield(pupilData.trials(tr),'stopTime') || isempty(pupilData.trials(tr).stopTime)
-        %             pupilData.trials(tr).stopTime = start + length(pupilData.trials(tr).pupilSize)-1;
-        %         end
-        if isempty(pupilData.trials(tr).stopTime)
-            stop = start + length(pupilData.trials(tr).eyeTime)-1;
-        else
-            stop = find(ti==pupilData.trials(tr).stopTime);
+if isstruct(pupilData)
+    pupilData.block.pupilSize = pu;
+    pupilData.block.missingData = md;
+    pupilData.block.blinks = bl;
+    pupilData.block.blinkRate=60*500*(nansum(diff(bl)==1)/sum(~isnan(bl)));%blinks per minute
+    pupilData.block.eyeX = eyeX;
+    pupilData.block.eyeY = eyeY;
+    
+    
+    if ~noTrials % only for data coming from read_eyelink
+        for tr = 1:length(pupilData.trials)
+            ti = pupilData.block.time;
+            start = find(ti==pupilData.trials(tr).startTime);
+            
+            %         if ~isfield(pupilData.trials(tr),'stopTime') || isempty(pupilData.trials(tr).stopTime)
+            %             pupilData.trials(tr).stopTime = start + length(pupilData.trials(tr).pupilSize)-1;
+            %         end
+            if isempty(pupilData.trials(tr).stopTime)
+                stop = start + length(pupilData.trials(tr).eyeTime)-1;
+            else
+                stop = find(ti==pupilData.trials(tr).stopTime);
+            end
+            
+            bltr = bl(start:stop);
+            putr = pu(start:stop);
+            eyeXtr = eyeX(start:stop);
+            eyeYtr = eyeY(start:stop);
+            sactr = pupilData.trials(tr).saccades;
+            try
+                sactr(end+1:length(putr)) = NaN;
+            catch
+                sactr(end+1:length(putr)) = 0;
+            end
+            pupilData.trials(tr).blinks = bltr(:);
+            pupilData.trials(tr).pupilSize = putr(:);
+            pupilData.trials(tr).eyeX = eyeXtr(:);
+            pupilData.trials(tr).eyeY = eyeYtr(:);
+            pupilData.trials(tr).saccades = sactr(1:length(putr));
+            % warning('stempio tweaked here so that length of pupilData.trials(tr).eyeTime was same as corrected pupil size, in order for it to be downsampled later')
+            pupilData.trials(tr).eyeTime = pupilData.trials(tr).eyeTime(1:length(putr));
         end
-        
-        bltr = bl(start:stop);
-        putr = pu(start:stop);        
-        eyeXtr = eyeX(start:stop);
-        eyeYtr = eyeY(start:stop);     
-        sactr = pupilData.trials(tr).saccades;
-        try
-        sactr(end+1:length(putr)) = NaN;
-        catch
-        sactr(end+1:length(putr)) = 0;   
-        end
-        pupilData.trials(tr).blinks = bltr(:);
-        pupilData.trials(tr).pupilSize = putr(:);
-        pupilData.trials(tr).eyeX = eyeXtr(:);
-        pupilData.trials(tr).eyeY = eyeYtr(:);
-        pupilData.trials(tr).saccades = sactr(1:length(putr));
-        % warning('stempio tweaked here so that length of pupilData.trials(tr).eyeTime was same as corrected pupil size, in order for it to be downsampled later')
-        pupilData.trials(tr).eyeTime = pupilData.trials(tr).eyeTime(1:length(putr));
+    else
+        blockData.pupilSize = pu;
+        blockData.blinks = bl;
+        pupilData = blockData;
     end
 else
+    blockData.pupilSize = pu;
+    blockData.blinks = bl;
     pupilData = blockData;
 end
 
 if plotOption
     figure;
     for bl = 1:length(blinkOnsets)
-        x=[blinkOnsets(bl)-1000:blinkOffsets(bl)+1000];
+        x=[blinkOnsets(bl)-samplingRate:blinkOffsets(bl)+samplingRate];
         x(x<=0)=[];
         x(x>length(pu)) = [];
         if ~isempty(x)
@@ -287,4 +288,75 @@ if plotOption
             pause;
         end
     end
+end
+end
+
+function newbl = removeRemainingBlinks(pu,bl,samplingRate,threshON)
+scale = ceil(20/(1000/samplingRate));
+xPu = interp1(find(~isnan(pu)),zscore(pu(~isnan(pu))),[1:length(pu)],'linear');%temporary interp for derivative
+dPu = diff2pt(samplingRate,xPu(:),scale);
+aPu = diff2pt(samplingRate,dPu(:),scale);
+thresh2 = round(threshON/8);
+remainingBlinks=find(diff(dPu<-threshON)==1);
+blinkOffsets = find(diff(dPu>threshON)==-1);
+
+newbl = bl;
+for ii = 1:length(remainingBlinks)
+    ix = remainingBlinks(ii);
+    while (dPu(ix)<-thresh2) && ix>1
+        ix = ix-1;
+        newbl(ix) = true;
+    end
+    
+    ix = remainingBlinks(ii);
+    while (dPu(ix)<thresh2*1.1) && ix<length(dPu)
+        ix = ix+1;
+        newbl(ix) = true;
+    end
+    
+    while (dPu(ix)>thresh2*0.5) && ix<length(dPu)
+        ix = ix+1;
+        newbl(ix) = true;
+    end
+    
+    %newbl(ix:(ix+scale*10)) = true;
+    R = 200;
+    if false
+        subplot(1,3,1)
+        plot(xPu(remainingBlinks(ii)-R:remainingBlinks(ii)+R))
+        hold on
+        plot(find(newbl(remainingBlinks(ii)-R:remainingBlinks(ii)+R)),xPu(remainingBlinks(ii)-R+find(newbl(remainingBlinks(ii)-R:remainingBlinks(ii)+R))))
+        hold off;
+        subplot(1,3,2)
+        plot(dPu(remainingBlinks(ii)-R:remainingBlinks(ii)+R))
+        hold on
+        plot(find(newbl(remainingBlinks(ii)-R:remainingBlinks(ii)+R)),dPu(remainingBlinks(ii)-R+find(newbl(remainingBlinks(ii)-R:remainingBlinks(ii)+R))));
+        hold off;
+        subplot(1,3,3)
+        plot(aPu(remainingBlinks(ii)-R:remainingBlinks(ii)+R))
+        hold on
+        plot(find(newbl(remainingBlinks(ii)-R:remainingBlinks(ii)+R)),aPu(remainingBlinks(ii)-R+find(newbl(remainingBlinks(ii)-R:remainingBlinks(ii)+R))));
+        hold off;
+        pause;
+    end
+end
+for ii = 1:length(blinkOffsets)
+    ix = blinkOffsets(ii);
+    while (dPu(ix)>thresh2) && ix<length(dPu)
+        ix = ix+1;
+        newbl(ix) = true;
+    end
+    if false
+        subplot(1,3,1)
+        plot(find(newbl(blinkOffsets(ii)-100:blinkOffsets(ii)+100)),xPu(blinkOffsets(ii)-100+find(newbl(blinkOffsets(ii)-100:blinkOffsets(ii)+100))),'g')
+        hold off;
+        subplot(1,3,2)
+        plot(find(newbl(blinkOffsets(ii)-100:blinkOffsets(ii)+100)),dPu(blinkOffsets(ii)-100+find(newbl(blinkOffsets(ii)-100:blinkOffsets(ii)+100))),'g');
+        hold off;
+        subplot(1,3,3)
+        plot(find(newbl(remainingBlinks(ii)-100:remainingBlinks(ii)+100)),aPu(remainingBlinks(ii)-100+find(newbl(remainingBlinks(ii)-100:remainingBlinks(ii)+100))),'g');
+        hold off;
+        pause;
+    end
+end
 end

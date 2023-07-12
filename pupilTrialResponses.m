@@ -28,11 +28,22 @@ end
 next=0;
 for uu = 1:LU
     tru = input==U(uu);
-    tr = find(diff(tru)==1);
-    tr_end = find(diff(tru)==-1);
+    if false
+        tr = find(diff(tru)==1);
+        if tru(1)
+            tr = [1; tr];
+        end
+        tr_end = find(diff(tru)==-1);
+        if tru(end)
+            tr_end = [tr_end; length(tru)];
+        end
+    else
+        tr = find(tru);
+    end
     for tt = 1:length(tr)
         ev = input*0;
-        ev(tr(tt)+1:tr_end(tt)) = 1;
+        %ev(tr(tt)+1:tr_end(tt)) = 1;
+        ev(tr(tt)) = 1;
         z = conv(ev,I(:,uu));
         next=next+1;
         x(:,next) = z(1:length(input));

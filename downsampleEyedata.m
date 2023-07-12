@@ -1,6 +1,5 @@
 function data = downsampleEyedata( data, desiredSR, fsamp )
 
-
 warning off % to avoid downsamplevector warnings
 if ~isstruct(data) || ~isfield(data,'pupilData')
     error('First argument should be data structure coming out from loadData');
@@ -12,7 +11,12 @@ for dd = 1:length(data)
     if isstruct(blockData)
         
         if nargin<3
-            fsamp = round(1./nanmean(diff(data(dd).pupilData.block.time)));
+            df = nanmean(diff(data(dd).pupilData.block.time));
+            if df < 1
+                fsamp = round(1./df);
+            else
+                fsamp = round(1000./df);
+            end
         end
         
         L = length(blockData.pupilSize);

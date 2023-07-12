@@ -131,9 +131,19 @@ if all(ok)
         p.block = blockData;
         binInterval = unique(diff(blockData.time));
         samplingRate = 1000/binInterval;
-        p = processBlinks(p,samplingRate,'linear',false,extraBlinkRemoval);
-        trialData = p.trials;
-        blockData = p.block;
+        p2 = processBlinks(p,samplingRate,'linear',false,extraBlinkRemoval);
+        if false
+            figure;
+            plot(p.block.pupilSize)
+            hold on
+            plot(p2.block.pupilSize)
+        end
+        trialData = p2.trials;
+        blockData = p2.block;
+        for tr = 1:length(p2.trials)
+            trialData(tr).rawPupil = p.trials(tr).pupilSize;
+        end
+        blockData.rawPupil = p.block.pupilSize;
         clear p
         
         disp('Processing pupil data');
@@ -198,7 +208,7 @@ if all(ok)
         end
         
         if exist('blockData') && isstruct(blockData)
-            
+            pupilData.block.rawPupilSize = blockData.rawPupil;
             pupilData.block.pupilSize = blockData.pupilSize;
             pupilData.block.blinks = blockData.blinks;
             pupilData.block.saccades = blockData.saccades;
@@ -233,6 +243,7 @@ if all(ok)
                 pupilData.trials(tr).eyeX = pupilData.block.eyeX(blockIx);
                 pupilData.trials(tr).eyeY = pupilData.block.eyeY(blockIx);
                 pupilData.trials(tr).pupilSize = pupilData.block.pupilSize(blockIx);
+                pupilData.trials(tr).rawPupilSize = pupilData.block.rawPupilSize(blockIx);
             end
         else
             pupilData.trials = NaN;

@@ -17,7 +17,12 @@ if isstruct(data) && isfield(data,'pupilData') && isfield(data(1).pupilData,'blo
         trialData = data(dd).pupilData.trials;
         if isstruct(blockData)
             if nargin<3
-                fsamp = round(1./nanmean(diff(blockData.time)));
+                df = nanmean(diff(blockData.time));
+                if df<1
+                    fsamp = round(1./nanmean(diff(blockData.time)));
+                else
+                    fsamp = round(1000./nanmean(diff(blockData.time)));
+                end
             end
             pupil = blockData.pupilSize;
             for ff = 1:nF
